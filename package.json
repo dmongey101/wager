@@ -1,10 +1,10 @@
 {
-  "name": "boilerplate-next-mono",
+  "name": "wager-app",
   "packageManager": "yarn@3.2.0",
   "version": "1.0.0",
   "main": "index.js",
-  "repository": "git@github.com:wk0/boilerplate-next.git",
-  "author": "Will  Kelly <willkelly0@gmail.com>",
+  "repository": "git@github.com:dmongey101/wager.git",
+  "author": "Donal Mongey <donalmongey@gmail.com>",
   "license": "MIT",
   "private": true,
   "workspaces": [
