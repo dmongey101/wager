@@ -12,8 +12,8 @@ const Home: NextPage = () => {
   return (
     <div className="flex h-screen flex-col">
       <Head>
-        <title>Web3 Next-Boilerplate Mono</title>
-        <meta name="description" content="Boilerplate for Web3 dApp" />
+        <title>Wager</title>
+        <meta name="description" content="Bet against friends" />
         <link rel="icon" href="/favicon.ico" />
       </Head>
 
