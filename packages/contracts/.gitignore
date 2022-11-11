@@ -11,6 +11,7 @@ typechain/
 
 node_modules/
 .env
+.env.local
 
 .yalc
 yalc.lock
