@@ -1,17 +1,16 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.9;
+pragma solidity ^0.8.7;
 
 import '@chainlink/contracts/src/v0.8/ChainlinkClient.sol';
 import '@chainlink/contracts/src/v0.8/ConfirmedOwner.sol';
+import './interfaces/IChainlinkAPI.sol';
 
-contract Wager is ChainlinkClient, ConfirmedOwner {
-    using Chainlink for Chainlink.Request;
-
-    address public override owner;
-    uint256 variable1;
-    uint256 variable2;
-    bytes32 private jobId;
-    uint256 private fee;
+contract Wager {
+    uint256 public variable1;
+    uint256 public variable2;
+    IChainlinkAPI api;
+    bytes32 public requestId1;
+    bytes32 public requestId2;
 
     struct Bet {
         address person1;
@@ -24,62 +23,54 @@ contract Wager is ChainlinkClient, ConfirmedOwner {
 
     Bet currentBet;
 
-    constructor() {
-        owner = msg.sender,
+    event RequestedData(bytes32 requestId1, bytes32 requestId2);
+
+        /**
+     * @notice Initialize the link token and target oracle
+     * @dev The oracle address must be an Operator contract for multiword response
+     *
+     *
+     * Goerli Testnet details:
+     * Link Token: 0x326C977E6efc84E512bB9C30f76E30c160eD06FB
+     * Oracle: 0xCC79157eb46F5624204f47AB42b3906cAA40eaB7 (Chainlink DevRel)
+     * jobId: 53f9755920cd451a8fe46f5087468395
+     *
+     */
+    constructor(address _api) {
+        api = IChainlinkAPI(_api);
     }
 
-    function deployWager(address _person1, address _person2, string _apiEndpoint1, string _apiEndpoint2, string _path1. string _path2) public {
-        Bet memory bet = new Bet({
-            person1 = _person1,
-            person2 = _person2,
-            apiEndpoint1 = _apiEndPoint1,
-            apiEndpoint2 = _apiEndPoint2,
-            path1 = _path1,
-            path2 = _path2
+    function deployWager(address _person1, address _person2, string memory _apiEndpoint1, string memory _apiEndpoint2, string memory _path1, string memory _path2) public {
+        Bet memory bet = Bet({
+            person1: _person1,
+            person2: _person2,
+            apiEndpoint1: _apiEndpoint1,
+            apiEndpoint2: _apiEndpoint2,
+            path1: _path1,
+            path2: _path2
         });
 
         currentBet = bet;
     }
 
-    function requestMarketCapData() public returns (bytes32 requestId) {
+    function requestData() public {
 
-        Chainlink.Request memory req = buildChainlinkRequest(
-            jobId,
-            address(this),
-            this.fulfillMultipleParameters.selector
-        );
-        req.add('url1', currentBet.apiEndpoint1);
-        req.add('path1', currentBet.path1);
-        req.add('url2', currentBet.apiEndpoint2);
-        req.add('path2', currentBet.path2);
-        sendChainlinkRequest(req, fee); // MWR API.
+        requestId1 = api.requestData(currentBet.apiEndpoint1, currentBet.path1);
+        requestId2 = api.requestData(currentBet.apiEndpoint2, currentBet.path2);
+        emit RequestedData(requestId1, requestId2);
 
-        // '[?(@.id=="bitcoin")].market_cap'
-
-        // Multiply the result by 1000000000000000000 to remove decimals
-        int256 timesAmount = 10**18;
-        req.addInt('times', timesAmount);
-
-        // Sends the request
-        return sendChainlinkRequest(req, fee);
+        // '[?(@.id=='bitcoin')].market_cap'
     }
 
-    function fulfillMultipleParameters(
-        bytes32 requestId,
-        uint256 path1Response,
-        uint256 path2Response
-    ) public recordChainlinkFulfillment(requestId) {
-        emit RequestMultipleFulfilled(requestId, path1Response, path2Response);
-        variable1 = path1Response;
-        variable2 = path2Response;
+    function getData() public view returns (uint256, uint256){
+        return (api.getData(requestId1), api.getData(requestId2));
     }
 
         /**
      * Allow withdraw of Link tokens from the contract
      */
-    function withdrawLink() public onlyOwner {
-        LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
-        require(link.transfer(msg.sender, link.balanceOf(address(this))), 'Unable to transfer');
-    }
-    
+    // function withdrawLink() public onlyOwner {
+    //     LinkTokenInterface link = LinkTokenInterface(chainlinkTokenAddress());
+    //     require(link.transfer(msg.sender, link.balanceOf(address(this))), 'Unable to transfer');
+    // }
 }
