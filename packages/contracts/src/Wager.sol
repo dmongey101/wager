@@ -25,17 +25,6 @@ contract Wager {
 
     event RequestedData(bytes32 requestId1, bytes32 requestId2);
 
-        /**
-     * @notice Initialize the link token and target oracle
-     * @dev The oracle address must be an Operator contract for multiword response
-     *
-     *
-     * Goerli Testnet details:
-     * Link Token: 0x326C977E6efc84E512bB9C30f76E30c160eD06FB
-     * Oracle: 0xCC79157eb46F5624204f47AB42b3906cAA40eaB7 (Chainlink DevRel)
-     * jobId: 53f9755920cd451a8fe46f5087468395
-     *
-     */
     constructor(address _api) {
         api = IChainlinkAPI(_api);
     }

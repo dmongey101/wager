@@ -10,20 +10,22 @@ import '@chainlink/contracts/src/v0.8/ConfirmedOwner.sol';
  */
 
 /**
- * THIS IS AN EXAMPLE CONTRACT THAT USES HARDCODED VALUES FOR CLARITY.
- * THIS IS AN EXAMPLE CONTRACT THAT USES UN-AUDITED CODE.
+ * THIS IS AN EXAMPLE CONTRACT WHICH USES HARDCODED VALUES FOR CLARITY.
+ * THIS EXAMPLE USES UN-AUDITED CODE.
  * DO NOT USE THIS CODE IN PRODUCTION.
  */
 
-contract FetchFromArray is ChainlinkClient, ConfirmedOwner {
+contract APIConsumer is ChainlinkClient, ConfirmedOwner {
     using Chainlink for Chainlink.Request;
 
-    uint256 public marketcap;
-
+    uint256 public var1;
+    uint256 public var2;
     bytes32 private jobId;
     uint256 private fee;
 
-    event RequestFirstId(bytes32 indexed requestId, uint256 id);
+    event RequestVolume(bytes32 indexed requestId, uint256 data);
+
+    mapping(bytes32 => uint256) public data;
 
     /**
      * @notice Initialize the link token and target oracle
@@ -31,7 +33,7 @@ contract FetchFromArray is ChainlinkClient, ConfirmedOwner {
      * Goerli Testnet details:
      * Link Token: 0x326C977E6efc84E512bB9C30f76E30c160eD06FB
      * Oracle: 0xCC79157eb46F5624204f47AB42b3906cAA40eaB7 (Chainlink DevRel)
-     * jobId: 7d80a6386ef543a3abb52817f6707e3b
+     * jobId: ca98366cc7314957b8c012c72f05aeeb
      *
      */
     constructor() ConfirmedOwner(msg.sender) {
@@ -43,38 +45,35 @@ contract FetchFromArray is ChainlinkClient, ConfirmedOwner {
 
     /**
      * Create a Chainlink request to retrieve API response, find the target
-     * data which is located in a list
+     * data, then multiply by 1000000000000000000 (to remove decimal places from data).
      */
-    function requestFirstId() public returns (bytes32 requestId) {
+    function requestData(string memory url, string memory path) external returns (bytes32 requestId) {
         Chainlink.Request memory req = buildChainlinkRequest(jobId, address(this), this.fulfill.selector);
 
         // Set the URL to perform the GET request on
-        // API docs: https://www.coingecko.com/en/api/documentation?
-        req.add('get', 'https://api.coingecko.com/api/v3/coins/markets?vs_currency=usd&per_page=10');
+        req.add('get', url);
 
-        // Set the path to find the desired data in the API response, where the response format is:
-        // [{
-        //  "id": "bitcoin",
-        //  "symbol": btc",
-        // ...
-        // },
-        //{
-        // ...
-        // .. }]
-        // request.add("path", "0.id"); // Chainlink nodes prior to 1.0.0 support this format
-        req.add('path', '0,market_cap'); // Chainlink nodes 1.0.0 and later support this format
+        req.add('path', path); // Chainlink nodes 1.0.0 and later support this format
+
+        // Multiply the result by 1000000000000000000 to remove decimals
         int256 timesAmount = 10**18;
         req.addInt('times', timesAmount);
+
         // Sends the request
         return sendChainlinkRequest(req, fee);
     }
 
     /**
-     * Receive the response in the form of string
+     * Receive the response in the form of uint256
      */
-    function fulfill(bytes32 _requestId, uint256 _marketcap) public recordChainlinkFulfillment(_requestId) {
-        emit RequestFirstId(_requestId, _marketcap);
-        marketcap = _marketcap;
+    function fulfill(bytes32 _requestId, uint256 _data) public recordChainlinkFulfillment(_requestId) {
+        emit RequestVolume(_requestId, _data);
+        var1 = _data;
+        data[_requestId] = _data;
+    }
+
+    function getData(bytes32 requestId) external view returns (uint256) {
+        return data[requestId];
     }
 
     /**
