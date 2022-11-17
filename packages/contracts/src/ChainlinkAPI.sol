@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import '@chainlink/contracts/src/v0.8/ChainlinkClient.sol';
-import '@chainlink/contracts/src/v0.8/ConfirmedOwner.sol';
+import '../../../node_modules/@chainlink/contracts/src/v0.8/ChainlinkClient.sol';
+import '../../../node_modules/@chainlink/contracts/src/v0.8/ConfirmedOwner.sol';
 
 /**
  * Request testnet LINK and ETH here: https://faucets.chain.link/
