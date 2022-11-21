@@ -8,7 +8,7 @@ contract Wager {
 
     using SafeMath for uint256;
 
-    IChainlinkAPI _chainlinkApi;
+    IChainlinkAPI public _chainlinkApi;
     
     struct Api {
         string apiEndpoint1;

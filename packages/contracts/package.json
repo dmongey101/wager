@@ -81,6 +81,5 @@
     "tenderly:push": "node ./_scripts.js tenderly:push"
   },
   "dependencies": {
-    "@chainlink/contracts": "^0.5.1"
   }
 }

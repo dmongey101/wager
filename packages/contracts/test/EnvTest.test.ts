@@ -1,6 +1,6 @@
 import 'dotenv/config';
 
-import {assert, expect} from './chai-setup';
+import {assert, expect} from 'chai';
 import {ethers} from 'hardhat';
 
 const {NOT_AN_ENV_VAR, ETH_NODE_URI_MAINNET, ETH_NODE_URI_KOVAN, MNEMONIC, COINMARKETCAP_API_KEY, ETHERSCAN_API_KEY} =
