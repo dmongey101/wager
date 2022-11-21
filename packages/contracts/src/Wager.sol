@@ -96,7 +96,7 @@ contract Wager {
     }
 
     function settle(uint256 index) public {
-        Bet memory bet = _betIndexes[index];
+        Bet storage bet = _betIndexes[index];
         (uint256 person1Data, uint256 person2Data) = _getData(index);
         require(person1Data != 0, "Data not ready");
         require(person2Data != 0, "Data not ready");
@@ -115,6 +115,7 @@ contract Wager {
                 _transferEth(bet.person2, bet.amountEther);
             }
         }
+        bet.complete = true;
     }
 
     function requestData(uint256 _index) public {
