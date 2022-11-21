@@ -2,13 +2,15 @@
 pragma solidity ^0.8.7;
 
 import './interfaces/IChainlinkAPI.sol';
+import './interfaces/IERC20.sol';
 import './libraries/SafeMath.sol';
+import './libraries/SafeERC20.sol';
 
 contract Wager {
-
     using SafeMath for uint256;
-
-    IChainlinkAPI public _chainlinkApi;
+    using SafeERC20 for IERC20;
+    IChainlinkAPI _chainlinkApi;
+    IERC20 public _chainlinkToken;
     
     struct Api {
         string apiEndpoint1;
@@ -16,7 +18,7 @@ contract Wager {
         string path1;
         string path2;
         bytes32 requestId1;
-        bytes32 requestId2;
+        bytes32 requestId2; 
     }
 
     struct Bet {
@@ -36,7 +38,7 @@ contract Wager {
         Draw
     }
 
-    mapping(address => mapping(uint256 => uint256)) _userBetBalances;
+    // mapping(address => mapping(uint256 => uint256)) _userBetBalances;
 
     mapping(uint256 => Bet) _betIndexes;
 
@@ -45,9 +47,11 @@ contract Wager {
     uint256 private _currentIndex = 1;
 
     event RequestedData(bytes32 requestId1, bytes32 requestId2);
+    event DepositLink(address user, uint256 amount);
 
-    constructor(address _api) {
-        _chainlinkApi = IChainlinkAPI(_api);
+    constructor(address api, address chainlinkToken) {
+        _chainlinkToken = IERC20(chainlinkToken);
+        _chainlinkApi = IChainlinkAPI(api);
     }
 
     function deployWager(
@@ -57,11 +61,12 @@ contract Wager {
         string memory _apiEndpoint2, 
         string memory _path1, 
         string memory _path2, 
-        uint256 _amount,
+        uint256 _amountForBet,
         uint256 _deadline
     ) public payable {
         require(_person2 != address(0), "Please use a valid address");
-        require(_amount.div(2) == msg.value, "Not the correct amount to deposit");
+        require(_amountForBet.div(2) == msg.value, "Not the correct amount to deposit");
+        _depositLink();
         Api memory api = Api({
             apiEndpoint1: _apiEndpoint1,
             apiEndpoint2: _apiEndpoint2,
@@ -76,7 +81,7 @@ contract Wager {
             person2: payable(_person2),
             person1Outcome: Outcome(_outcome),
             api: api,
-            amountEther: _amount,
+            amountEther: _amountForBet,
             isActive: false,
             deadline: _deadline,
             complete: false
@@ -92,11 +97,13 @@ contract Wager {
         Bet storage bet = _betIndexes[index];
         require(msg.sender == bet.person2, "You are not assigned to this bet");
         require(bet.amountEther.div(2) == msg.value, "Not the correct amount to deposit");
+        _depositLink();
         bet.isActive = true;
     }
 
     function settle(uint256 index) public {
         Bet storage bet = _betIndexes[index];
+        require(bet.complete == false, "Bet already settled");
         (uint256 person1Data, uint256 person2Data) = _getData(index);
         require(person1Data != 0, "Data not ready");
         require(person2Data != 0, "Data not ready");
@@ -122,6 +129,9 @@ contract Wager {
         Bet storage bet = _betIndexes[_index];
         require(bet.isActive, "Bet is not active");
         require(block.timestamp >= bet.deadline, "Too early to get data");
+        require(_chainlinkToken.balanceOf(address(this)) >= 0.2 ether, "Not enough link in contract");
+        _chainlinkToken.approve(address(_chainlinkApi), 0.2 ether);
+        _chainlinkToken.safeTransferFrom(address(this), address(_chainlinkApi), 0.2 ether);
         bet.api.requestId1 = _chainlinkApi.requestData(bet.api.apiEndpoint1, bet.api.path1);
         bet.api.requestId2 = _chainlinkApi.requestData(bet.api.apiEndpoint2, bet.api.path2);
         emit RequestedData(bet.api.requestId1, bet.api.requestId2);
@@ -135,6 +145,12 @@ contract Wager {
     function _transferEth(address to, uint256 amount) public {
         (bool success,) = to.call{value: amount}("");
         require(success, "Transfer failed");
+    }
+
+    function _depositLink() private {
+        require(_chainlinkToken.balanceOf(msg.sender) >= 0.1 ether, "Not enough Link");
+        _chainlinkToken.safeTransferFrom(msg.sender, address(this), 0.1 ether);
+        emit DepositLink(msg.sender, 0.1 ether);
     }
 
         /**
